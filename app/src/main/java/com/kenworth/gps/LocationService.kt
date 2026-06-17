@@ -151,15 +151,22 @@ class LocationService : Service() {
                     val status = obj.optString("status", "")
 
                     when (status) {
+                        "eliminated" -> {
+                            // El admin eliminó este dispositivo — resetear todo y volver al login
+                            getSharedPreferences(Config.PREFS_NAME, MODE_PRIVATE).edit().clear().apply()
+                            actualizarNotif("Dispositivo eliminado — contacta al administrador")
+                            stopSelf()
+                            val intent = Intent(applicationContext, LoginActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            startActivity(intent)
+                        }
                         "unlinked" -> {
-                            // El admin desvinculó este dispositivo
                             getSharedPreferences(Config.PREFS_NAME, MODE_PRIVATE).edit().apply {
                                 putBoolean(Config.KEY_ACTIVO, false)
                                 remove(Config.KEY_TELEFONO)
                                 apply()
                             }
                             actualizarNotif("Dispositivo desvinculado por administrador")
-                            Log.w("KW_GPS", "Desvinculado por admin")
                             stopSelf()
                         }
                         "error" -> {
