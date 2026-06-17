@@ -73,7 +73,7 @@ class LoginActivity : AppCompatActivity() {
                 runOnUiThread {
                     progressBar.visibility = View.GONE
                     btnLogin.isEnabled     = true
-                    mostrarError("Sin conexión al servidor")
+                    mostrarError("Error: ${e.javaClass.simpleName}: ${e.message}")
                 }
             }
 
