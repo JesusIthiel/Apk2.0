@@ -152,13 +152,14 @@ class LocationService : Service() {
 
                     when (status) {
                         "eliminated" -> {
-                            // El admin eliminó este dispositivo — resetear todo y volver al login
-                            getSharedPreferences(Config.PREFS_NAME, MODE_PRIVATE).edit().clear().apply()
-                            actualizarNotif("Dispositivo eliminado — contacta al administrador")
+                            // El admin eliminó este dispositivo — limpiar número pero mantener sesión
+                            getSharedPreferences(Config.PREFS_NAME, MODE_PRIVATE).edit().apply {
+                                putBoolean(Config.KEY_ACTIVO, false)
+                                remove(Config.KEY_TELEFONO)
+                                apply()
+                            }
+                            actualizarNotif("Dispositivo eliminado — ingresa un nuevo número")
                             stopSelf()
-                            val intent = Intent(applicationContext, LoginActivity::class.java)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                            startActivity(intent)
                         }
                         "unlinked" -> {
                             getSharedPreferences(Config.PREFS_NAME, MODE_PRIVATE).edit().apply {
