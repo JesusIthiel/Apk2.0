@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/fondo_oscuro"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:padding="32dp">
+
+        <!-- Logo -->
+        <TextView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginTop="48dp"
+            android:text="K"
+            android:textSize="40sp"
+            android:textColor="@color/fondo_oscuro"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:background="@drawable/logo_circle" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="KENWORTH DEL ESTE"
+            android:textSize="14sp"
+            android:textColor="@color/blanco"
+            android:textStyle="bold"
+            android:letterSpacing="0.14" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="40dp"
+            android:text="Sistema de Rastreo GPS"
+            android:textSize="11sp"
+            android:textColor="@color/gris" />
+
+        <!-- Card de login -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="22dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ACCESO CONDUCTOR"
+                android:textSize="9sp"
+                android:textColor="@color/dorado"
+                android:textStyle="bold"
+                android:letterSpacing="0.18"
+                android:layout_marginBottom="20dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="USUARIO"
+                android:textSize="9sp"
+                android:textColor="@color/gris"
+                android:letterSpacing="0.12"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/etUsuario"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:hint="tu_usuario"
+                android:textColorHint="@color/gris"
+                android:textColor="@color/blanco"
+                android:textSize="15sp"
+                android:inputType="text"
+                android:background="@drawable/input_bg"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:singleLine="true"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CONTRASEÑA"
+                android:textSize="9sp"
+                android:textColor="@color/gris"
+                android:letterSpacing="0.12"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/etPassword"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:hint="••••••••"
+                android:textColorHint="@color/gris"
+                android:textColor="@color/blanco"
+                android:textSize="15sp"
+                android:inputType="textPassword"
+                android:background="@drawable/input_bg"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:singleLine="true"
+                android:layout_marginBottom="10dp" />
+
+            <TextView
+                android:id="@+id/tvError"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#ef4444"
+                android:textSize="11sp"
+                android:layout_marginBottom="14dp"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/btnLogin"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:text="INGRESAR"
+                android:textColor="@color/fondo_oscuro"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:background="@drawable/btn_dorado"
+                android:stateListAnimator="@null" />
+
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:indeterminateTint="@color/dorado"
+            android:visibility="gone" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="v2.0 · Kenworth del Este"
+            android:textSize="9sp"
+            android:textColor="@color/gris_oscuro" />
+
+    </LinearLayout>
+</ScrollView>

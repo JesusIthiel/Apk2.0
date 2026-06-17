@@ -1,0 +1,3 @@
+-keep class com.kenworth.gps.** { *; }
+-keep class com.google.android.gms.** { *; }
+-dontwarn okhttp3.**
