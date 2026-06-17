@@ -73,7 +73,7 @@ class LocationService : Service() {
     }
 
     private fun iniciarComoForeground() {
-        val notif = buildNotif("Rastreo activo — enviando cada 3 min")
+        val notif = buildNotif("Rastreo activo — enviando cada 1 min")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(Config.NOTIF_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
         } else {
