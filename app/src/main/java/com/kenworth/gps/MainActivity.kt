@@ -114,24 +114,34 @@ class MainActivity : AppCompatActivity() {
                     progressModulos.visibility = View.GONE
                     try {
                         val json  = JSONObject(body)
-                        val array = json.getJSONArray("data")
+                        val array = json.optJSONArray("data")
                         val lista = mutableListOf<Modulo>()
-                        for (i in 0 until array.length()) {
-                            val obj = array.getJSONObject(i)
-                            lista.add(Modulo(
-                                id        = obj.getInt("id"),
-                                nombre    = obj.getString("nombre"),
-                                totalPdfs = obj.optInt("total_pdfs", 0)
-                            ))
-                        }
-                        rvModulos.adapter = ModulosAdapter(lista) { modulo ->
-                            val intent = Intent(this@MainActivity, ModuloActivity::class.java).apply {
-                                putExtra("modulo_id",     modulo.id)
-                                putExtra("modulo_nombre", modulo.nombre)
+                        if (array != null) {
+                            for (i in 0 until array.length()) {
+                                val obj = array.getJSONObject(i)
+                                lista.add(Modulo(
+                                    id        = obj.getInt("id"),
+                                    nombre    = obj.getString("nombre"),
+                                    totalPdfs = obj.optInt("total_pdfs", 0)
+                                ))
                             }
-                            startActivity(intent)
                         }
-                    } catch (_: Exception) {}
+                        if (lista.isEmpty()) {
+                            tvModulosTitulo.text = "Sin módulos disponibles"
+                        } else {
+                            tvModulosTitulo.text = "MÓDULOS"
+                            rvModulos.adapter = ModulosAdapter(lista) { modulo ->
+                                val intent = Intent(this@MainActivity, ModuloActivity::class.java).apply {
+                                    putExtra("modulo_id",     modulo.id)
+                                    putExtra("modulo_nombre", modulo.nombre)
+                                }
+                                startActivity(intent)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        tvModulosTitulo.text = "Error al cargar módulos"
+                        android.util.Log.e("KW_MOD", "body=$body err=${e.message}")
+                    }
                 }
             }
         })
