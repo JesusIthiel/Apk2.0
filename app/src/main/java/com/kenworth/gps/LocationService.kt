@@ -22,8 +22,9 @@ class LocationService : Service() {
     private val httpClient = OkHttpClient()
     private val handler = Handler(Looper.getMainLooper())
 
-    // Mejor lectura acumulada en la ventana de 1 minuto
-    @Volatile private var mejorLectura: Location? = null
+    // Mejor lectura precisa (≤100m) y cualquier lectura de respaldo
+    @Volatile private var mejorLectura:     Location? = null
+    @Volatile private var cualquierLectura: Location? = null
 
     private val androidId by lazy {
         Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: ""
@@ -35,12 +36,13 @@ class LocationService : Service() {
     // Runnable que cada 60s toma la mejor lectura acumulada y la envía
     private val enviarRunnable = object : Runnable {
         override fun run() {
-            val loc = mejorLectura
-            mejorLectura = null
+            val loc = mejorLectura ?: cualquierLectura
+            mejorLectura    = null
+            cualquierLectura = null
             if (loc != null) {
                 enviarUbicacion(loc)
             } else {
-                Log.w("KW_GPS", "Sin lectura precisa en el último minuto")
+                Log.w("KW_GPS", "Sin lectura GPS disponible")
             }
             handler.postDelayed(this, Config.INTERVALO_MS)
         }
@@ -111,11 +113,18 @@ class LocationService : Service() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
                 for (loc in result.locations) {
-                    if (loc.accuracy > 50f) continue   // ignorar lecturas peores a 50 m
-                    val actual = mejorLectura
-                    if (actual == null || loc.accuracy < actual.accuracy) {
-                        mejorLectura = loc              // guardar solo si es más precisa
-                        Log.d("KW_GPS", "Nuevo mejor fix: ${loc.accuracy.toInt()}m")
+                    // Siempre guardar la lectura más reciente como respaldo
+                    val respaldo = cualquierLectura
+                    if (respaldo == null || loc.accuracy < respaldo.accuracy) {
+                        cualquierLectura = loc
+                    }
+                    // Guardar la más precisa que cumpla ≤100m
+                    if (loc.accuracy <= 100f) {
+                        val actual = mejorLectura
+                        if (actual == null || loc.accuracy < actual.accuracy) {
+                            mejorLectura = loc
+                            Log.d("KW_GPS", "Fix preciso: ${loc.accuracy.toInt()}m")
+                        }
                     }
                 }
             }

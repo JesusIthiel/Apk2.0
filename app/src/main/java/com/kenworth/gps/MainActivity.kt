@@ -59,10 +59,9 @@ class MainActivity : AppCompatActivity() {
         val numero = prefs.getString(Config.KEY_TELEFONO, "") ?: ""
         if (numero.isNotEmpty()) {
             cardNumero.visibility = View.GONE
-            if (!prefs.getBoolean(Config.KEY_ACTIVO, false)) {
-                prefs.edit { putBoolean(Config.KEY_ACTIVO, true) }
-                arrancarServicio()
-            }
+            // Siempre arrancar el servicio al abrir la app — Android puede haberlo matado
+            prefs.edit { putBoolean(Config.KEY_ACTIVO, true) }
+            arrancarServicio()
         } else {
             cardNumero.visibility = View.VISIBLE
         }
