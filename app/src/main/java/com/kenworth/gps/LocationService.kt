@@ -61,6 +61,12 @@ class LocationService : Service() {
         crearCanalNotificacion()
         iniciarComoForeground()
         iniciarRastreo()
+        // Enviar última ubicación conocida al instante para registrar el dispositivo de inmediato
+        try {
+            fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
+                if (loc != null) enviarUbicacion(loc)
+            }
+        } catch (_: SecurityException) {}
         handler.postDelayed(enviarRunnable, Config.INTERVALO_MS)
         handler.postDelayed(pingRunnable,   Config.PING_INTERVALO_MS)
         return START_STICKY
