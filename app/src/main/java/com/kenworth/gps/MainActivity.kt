@@ -27,7 +27,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var layoutLoading:   View
     private lateinit var prefs:           SharedPreferences
 
-    private val httpClient = OkHttpClient()
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
 
     private val launUbicacion = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
