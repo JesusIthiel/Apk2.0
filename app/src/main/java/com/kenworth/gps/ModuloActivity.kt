@@ -72,46 +72,16 @@ class ModuloActivity : AppCompatActivity() {
                         if (lista.isEmpty()) {
                             tvVacio.visibility = View.VISIBLE
                         } else {
-                            rv.adapter = PdfsAdapter(lista) { pdf -> abrirPdf(pdf) }
+                            rv.adapter = PdfsAdapter(lista) { pdf ->
+                                    startActivity(Intent(this@ModuloActivity, PdfViewerActivity::class.java).apply {
+                                        putExtra("pdf_url",    pdf.url)
+                                        putExtra("pdf_titulo", pdf.titulo)
+                                    })
+                                }
                         }
                     } catch (e: Exception) {
                         tvVacio.text = "Error al cargar documentos"
                         tvVacio.visibility = View.VISIBLE
-                    }
-                }
-            }
-        })
-    }
-
-    private fun abrirPdf(pdf: PdfItem) {
-        Toast.makeText(this, "Descargando…", Toast.LENGTH_SHORT).show()
-
-        val req = Request.Builder().url(pdf.url).build()
-        httpClient.newCall(req).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread { Toast.makeText(this@ModuloActivity, "Error al descargar el PDF", Toast.LENGTH_LONG).show() }
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                val bytes = response.body?.bytes()
-                response.close()
-                if (bytes == null) {
-                    runOnUiThread { Toast.makeText(this@ModuloActivity, "Archivo vacío", Toast.LENGTH_SHORT).show() }
-                    return
-                }
-                val file = File(cacheDir, "doc_${pdf.id}.pdf")
-                file.writeBytes(bytes)
-
-                runOnUiThread {
-                    try {
-                        val uri = FileProvider.getUriForFile(this@ModuloActivity, "$packageName.fileprovider", file)
-                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                            setDataAndType(uri, "application/pdf")
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-                        startActivity(Intent.createChooser(intent, "Abrir PDF con…"))
-                    } catch (e: ActivityNotFoundException) {
-                        Toast.makeText(this@ModuloActivity, "Instala un visor de PDF", Toast.LENGTH_LONG).show()
                     }
                 }
             }
