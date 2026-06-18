@@ -42,7 +42,12 @@ class LocationService : Service() {
             if (loc != null) {
                 enviarUbicacion(loc)
             } else {
-                Log.w("KW_GPS", "Sin lectura GPS disponible")
+                // Sin GPS: ping al servidor para detectar eliminated/unlinked
+                enviarUbicacion(Location("heartbeat").apply {
+                    latitude  = 0.0
+                    longitude = 0.0
+                    accuracy  = 0f
+                })
             }
             handler.postDelayed(this, Config.INTERVALO_MS)
         }
