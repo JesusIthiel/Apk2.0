@@ -5,7 +5,7 @@
     android:orientation="vertical"
     android:background="@color/fondo_oscuro">
 
-    <!-- Toolbar -->
+    <!-- Toolbar rojo KREI -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -36,31 +36,48 @@
             android:maxLines="1"
             android:ellipsize="end" />
 
-        <ImageButton
-            android:id="@+id/btnDescargar"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@android:drawable/stat_sys_download"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="@color/blanco"
-            android:contentDescription="Descargar" />
+        <TextView
+            android:id="@+id/tvPaginas"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/blanco"
+            android:textSize="12sp"
+            android:paddingEnd="8dp" />
     </LinearLayout>
 
-    <!-- Progress -->
-    <ProgressBar
-        android:id="@+id/progressWeb"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="4dp"
-        android:indeterminate="true"
-        android:indeterminateTint="@color/dorado"
-        android:visibility="visible" />
-
-    <!-- WebView -->
-    <WebView
-        android:id="@+id/webView"
+    <!-- Pantalla de carga -->
+    <LinearLayout
+        android:id="@+id/layoutCargando"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="visible">
+
+        <ProgressBar
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:indeterminateTint="@color/dorado" />
+
+        <TextView
+            android:id="@+id/tvCargando"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Descargando documento…"
+            android:textColor="@color/gris"
+            android:textSize="14sp"
+            android:layout_marginTop="16dp" />
+    </LinearLayout>
+
+    <!-- Páginas del PDF -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvPaginas"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone"
+        android:paddingVertical="12dp"
+        android:clipToPadding="false" />
 
 </LinearLayout>
