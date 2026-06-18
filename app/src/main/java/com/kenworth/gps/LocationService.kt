@@ -97,7 +97,18 @@ class LocationService : Service() {
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
-                result.lastLocation?.let { enviarUbicacion(it) }
+                // Elegir la lectura más precisa del lote
+                val mejor = result.locations
+                    .filter { it.accuracy <= 150f }
+                    .minByOrNull { it.accuracy }
+                if (mejor != null) {
+                    enviarUbicacion(mejor)
+                } else {
+                    // Todas son imprecisas — registrar pero no enviar
+                    val peor = result.lastLocation
+                    Log.w("KW_GPS", "Precisión baja (${peor?.accuracy?.toInt()}m) — omitida")
+                    actualizarNotif("⚠ Señal GPS débil — esperando fix")
+                }
             }
         }
 
