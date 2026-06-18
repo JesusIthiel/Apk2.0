@@ -15,12 +15,12 @@ import java.io.IOException
 
 class LoginActivity : AppCompatActivity() {
 
-    private lateinit var etUsuario:   EditText
-    private lateinit var etPassword:  EditText
-    private lateinit var btnLogin:    Button
-    private lateinit var tvError:     TextView
-    private lateinit var progressBar: ProgressBar
-    private lateinit var prefs:       SharedPreferences
+    private lateinit var etUsuario:     EditText
+    private lateinit var etPassword:   EditText
+    private lateinit var btnLogin:     Button
+    private lateinit var tvError:      TextView
+    private lateinit var layoutLoading: View
+    private lateinit var prefs:        SharedPreferences
     private val httpClient = OkHttpClient()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,11 +36,11 @@ class LoginActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_login)
 
-        etUsuario   = findViewById(R.id.etUsuario)
-        etPassword  = findViewById(R.id.etPassword)
-        btnLogin    = findViewById(R.id.btnLogin)
-        tvError     = findViewById(R.id.tvError)
-        progressBar = findViewById(R.id.progressBar)
+        etUsuario     = findViewById(R.id.etUsuario)
+        etPassword    = findViewById(R.id.etPassword)
+        btnLogin      = findViewById(R.id.btnLogin)
+        tvError       = findViewById(R.id.tvError)
+        layoutLoading = findViewById(R.id.layoutLoading)
 
         btnLogin.setOnClickListener { intentarLogin() }
     }
@@ -54,9 +54,9 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        btnLogin.isEnabled       = false
-        progressBar.visibility   = View.VISIBLE
-        tvError.visibility       = View.GONE
+        btnLogin.isEnabled        = false
+        layoutLoading.visibility  = View.VISIBLE
+        tvError.visibility        = View.GONE
 
         val json = JSONObject().apply {
             put("usuario",  usuario)
@@ -71,8 +71,8 @@ class LoginActivity : AppCompatActivity() {
         httpClient.newCall(req).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
-                    progressBar.visibility = View.GONE
-                    btnLogin.isEnabled     = true
+                    layoutLoading.visibility = View.GONE
+                    btnLogin.isEnabled       = true
                     mostrarError("Sin conexión al servidor")
                 }
             }
@@ -82,8 +82,8 @@ class LoginActivity : AppCompatActivity() {
                 response.close()
 
                 runOnUiThread {
-                    progressBar.visibility = View.GONE
-                    btnLogin.isEnabled     = true
+                    layoutLoading.visibility = View.GONE
+                    btnLogin.isEnabled       = true
                     try {
                         val obj = JSONObject(texto)
                         if (obj.getString("status") == "success") {

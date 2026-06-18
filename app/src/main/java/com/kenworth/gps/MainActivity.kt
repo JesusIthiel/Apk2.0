@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cardNumero:      View
     private lateinit var tvModulosTitulo: TextView
     private lateinit var rvModulos:       RecyclerView
-    private lateinit var progressModulos: ProgressBar
+    private lateinit var layoutLoading:   View
     private lateinit var prefs:           SharedPreferences
 
     private val httpClient = OkHttpClient()
@@ -65,7 +65,7 @@ class MainActivity : AppCompatActivity() {
         cardNumero      = findViewById(R.id.cardNumero)
         tvModulosTitulo = findViewById(R.id.tvModulosTitulo)
         rvModulos       = findViewById(R.id.rvModulos)
-        progressModulos = findViewById(R.id.progressModulos)
+        layoutLoading   = findViewById(R.id.layoutLoading)
 
         rvModulos.layoutManager = LinearLayoutManager(this)
 
@@ -95,7 +95,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun cargarModulos() {
-        progressModulos.visibility = View.VISIBLE
+        layoutLoading.visibility = View.VISIBLE
 
         val req = Request.Builder()
             .url("${Config.CONTENIDO_API}?accion=modulos")
@@ -104,14 +104,14 @@ class MainActivity : AppCompatActivity() {
 
         httpClient.newCall(req).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread { progressModulos.visibility = View.GONE }
+                runOnUiThread { layoutLoading.visibility = View.GONE }
             }
 
             override fun onResponse(call: Call, response: Response) {
                 val body = response.body?.string() ?: ""
                 response.close()
                 runOnUiThread {
-                    progressModulos.visibility = View.GONE
+                    layoutLoading.visibility = View.GONE
                     try {
                         val json  = JSONObject(body)
                         val array = json.optJSONArray("data")
