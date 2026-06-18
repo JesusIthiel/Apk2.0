@@ -12,36 +12,23 @@
         android:gravity="center_horizontal"
         android:padding="32dp">
 
-        <!-- Logo -->
-        <TextView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:layout_marginTop="48dp"
-            android:text="K"
-            android:textSize="40sp"
-            android:textColor="@color/fondo_oscuro"
-            android:textStyle="bold"
+        <!-- Logo KREI -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/logo_white_bg"
+            android:padding="20dp"
             android:gravity="center"
-            android:background="@drawable/logo_circle" />
+            android:layout_marginTop="56dp"
+            android:layout_marginBottom="40dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="KENWORTH DEL ESTE"
-            android:textSize="14sp"
-            android:textColor="@color/blanco"
-            android:textStyle="bold"
-            android:letterSpacing="0.14" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="40dp"
-            android:text="Sistema de Rastreo GPS"
-            android:textSize="11sp"
-            android:textColor="@color/gris" />
+            <ImageView
+                android:layout_width="200dp"
+                android:layout_height="100dp"
+                android:src="@drawable/logo_krei"
+                android:scaleType="fitCenter"
+                android:contentDescription="Logo" />
+        </LinearLayout>
 
         <!-- Card de login -->
         <LinearLayout
@@ -54,7 +41,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="ACCESO CONDUCTOR"
+                android:text="ACCESO"
                 android:textSize="9sp"
                 android:textColor="@color/dorado"
                 android:textStyle="bold"
@@ -123,7 +110,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:text="INGRESAR"
-                android:textColor="@color/fondo_oscuro"
+                android:textColor="@color/blanco"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.1"
@@ -139,14 +126,6 @@
             android:layout_marginTop="20dp"
             android:indeterminateTint="@color/dorado"
             android:visibility="gone" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="v2.0 · Kenworth del Este"
-            android:textSize="9sp"
-            android:textColor="@color/gris_oscuro" />
 
     </LinearLayout>
 </ScrollView>

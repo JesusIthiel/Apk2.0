@@ -63,17 +63,18 @@ class LocationService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         return NotificationCompat.Builder(this, Config.CHANNEL_ID)
-            .setContentTitle("Kenworth GPS")
+            .setContentTitle("Kenworth del Este")
             .setContentText(texto)
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setSilent(true)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
             .build()
     }
 
     private fun iniciarComoForeground() {
-        val notif = buildNotif("Rastreo activo — enviando cada 1 min")
+        val notif = buildNotif("●")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(Config.NOTIF_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
         } else {
@@ -150,7 +151,6 @@ class LocationService : Service() {
         httpClient.newCall(req).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Log.e("KW_GPS", "Error al enviar: ${e.message}")
-                actualizarNotif("⚠ Sin conexión — reintentando en 3 min")
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -162,36 +162,21 @@ class LocationService : Service() {
                     val status = obj.optString("status", "")
 
                     when (status) {
-                        "eliminated" -> {
-                            // El admin eliminó este dispositivo — limpiar número pero mantener sesión
+                        "eliminated", "unlinked" -> {
                             getSharedPreferences(Config.PREFS_NAME, MODE_PRIVATE).edit().apply {
-                                putBoolean(Config.KEY_ACTIVO, false)
-                                remove(Config.KEY_TELEFONO)
+                                clear()
                                 apply()
                             }
-                            actualizarNotif("Dispositivo eliminado — ingresa un nuevo número")
-                            stopSelf()
-                        }
-                        "unlinked" -> {
-                            getSharedPreferences(Config.PREFS_NAME, MODE_PRIVATE).edit().apply {
-                                putBoolean(Config.KEY_ACTIVO, false)
-                                remove(Config.KEY_TELEFONO)
-                                apply()
+                            val intent = Intent(this@LocationService, LoginActivity::class.java).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             }
-                            actualizarNotif("Dispositivo desvinculado por administrador")
+                            startActivity(intent)
                             stopSelf()
                         }
                         "error" -> {
-                            val msg = obj.optString("message", "")
-                            if (msg == "duplicate") {
-                                actualizarNotif("⚠ Número ya activo en otro dispositivo")
-                            } else {
-                                Log.e("KW_GPS", "Error servidor: $msg")
-                            }
+                            Log.e("KW_GPS", "Error servidor: ${obj.optString("message", "")}")
                         }
                         "success" -> {
-                            val hora = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                            actualizarNotif("✓ Enviado $hora · ${String.format("%.4f", location.latitude)}, ${String.format("%.4f", location.longitude)}")
                             Log.d("KW_GPS", "OK [${location.latitude}, ${location.longitude}]")
                         }
                     }

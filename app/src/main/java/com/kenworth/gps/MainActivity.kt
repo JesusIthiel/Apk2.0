@@ -11,18 +11,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import androidx.drawerlayout.widget.DrawerLayout
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var drawerLayout:   DrawerLayout
-    private lateinit var etTelefono:     EditText
-    private lateinit var btnIniciar:     Button
-    private lateinit var tvEstado:       TextView
-    private lateinit var tvInfo:         TextView
-    private lateinit var tvUsuario:      TextView
-    private lateinit var tvDrawerNombre: TextView
-    private lateinit var prefs:          SharedPreferences
+    private lateinit var etTelefono: EditText
+    private lateinit var btnIniciar: Button
+    private lateinit var cardNumero: View
+    private lateinit var prefs:      SharedPreferences
 
     private val launUbicacion = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -55,45 +50,22 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        drawerLayout   = findViewById(R.id.drawerLayout)
-        etTelefono     = findViewById(R.id.etTelefono)
-        btnIniciar     = findViewById(R.id.btnIniciar)
-        tvEstado       = findViewById(R.id.tvEstado)
-        tvInfo         = findViewById(R.id.tvInfo)
-        tvUsuario      = findViewById(R.id.tvUsuario)
-        tvDrawerNombre = findViewById(R.id.tvDrawerNombre)
-
-        val nombre = prefs.getString(Config.KEY_NOMBRE, "") ?: ""
-        tvUsuario.text      = nombre.ifEmpty { "Empleado" }
-        tvDrawerNombre.text = nombre.ifEmpty { "Empleado" }
-
-        etTelefono.setText(prefs.getString(Config.KEY_TELEFONO, ""))
-
-        if (prefs.getBoolean(Config.KEY_ACTIVO, false)) mostrarActivo()
-        else mostrarDetenido()
-
-        findViewById<ImageButton>(R.id.btnMenu).setOnClickListener {
-            drawerLayout.openDrawer(androidx.core.view.GravityCompat.START)
-        }
+        etTelefono = findViewById(R.id.etTelefono)
+        btnIniciar = findViewById(R.id.btnIniciar)
+        cardNumero = findViewById(R.id.cardNumero)
 
         btnIniciar.setOnClickListener { verificarYArrancar() }
 
-        findViewById<Button>(R.id.btnCerrarSesion).setOnClickListener {
-            cerrarSesion()
+        val numero = prefs.getString(Config.KEY_TELEFONO, "") ?: ""
+        if (numero.isNotEmpty()) {
+            cardNumero.visibility = View.GONE
+            if (!prefs.getBoolean(Config.KEY_ACTIVO, false)) {
+                prefs.edit { putBoolean(Config.KEY_ACTIVO, true) }
+                arrancarServicio()
+            }
+        } else {
+            cardNumero.visibility = View.VISIBLE
         }
-    }
-
-    private fun cerrarSesion() {
-        stopService(Intent(this, LocationService::class.java))
-        prefs.edit {
-            putBoolean(Config.KEY_LOGGED_IN, false)
-            putBoolean(Config.KEY_ACTIVO, false)
-            remove(Config.KEY_TELEFONO)
-            remove(Config.KEY_USUARIO)
-            remove(Config.KEY_NOMBRE)
-        }
-        startActivity(Intent(this, LoginActivity::class.java))
-        finish()
     }
 
     private fun verificarYArrancar() {
@@ -127,45 +99,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun iniciarServicio() {
+        prefs.edit { putBoolean(Config.KEY_ACTIVO, true) }
+        arrancarServicio()
+        cardNumero.visibility = View.GONE
+    }
+
+    private fun arrancarServicio() {
         val intent = Intent(this, LocationService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent)
         else startService(intent)
-        prefs.edit { putBoolean(Config.KEY_ACTIVO, true) }
-        mostrarActivo()
-    }
-
-    fun onDesvinculado() {
-        prefs.edit {
-            putBoolean(Config.KEY_ACTIVO, false)
-            remove(Config.KEY_TELEFONO)
-        }
-        mostrarDetenido()
-        etTelefono.setText("")
-        toast("Dispositivo desvinculado por el administrador")
-    }
-
-    private fun mostrarActivo() {
-        btnIniciar.visibility = View.GONE
-        tvEstado.text = "●  Rastreo activo"
-        tvEstado.setTextColor(getColor(R.color.verde))
-        tvInfo.text = "Enviando ubicación cada 3 minutos.\nEl rastreo continúa aunque cierres la app."
-        etTelefono.isEnabled = false
-    }
-
-    private fun mostrarDetenido() {
-        btnIniciar.visibility = View.VISIBLE
-        tvEstado.text = "○  Servicio detenido"
-        tvEstado.setTextColor(getColor(R.color.gris))
-        tvInfo.text = "Ingresa el número de línea y presiona Iniciar"
-        etTelefono.isEnabled = true
-    }
-
-    override fun onBackPressed() {
-        if (drawerLayout.isDrawerOpen(androidx.core.view.GravityCompat.START)) {
-            drawerLayout.closeDrawer(androidx.core.view.GravityCompat.START)
-        } else {
-            super.onBackPressed()
-        }
     }
 
     private fun tienePermiso(p: String) =

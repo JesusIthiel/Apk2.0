@@ -2,8 +2,8 @@
 <resources>
     <color name="fondo_oscuro">#0F1629</color>
     <color name="fondo_card">#1A2240</color>
-    <color name="rojo_kw">#C0392B</color>
-    <color name="dorado">#C8960A</color>
+    <color name="rojo_kw">#C41230</color>
+    <color name="dorado">#C41230</color>
     <color name="verde">#22C55E</color>
     <color name="blanco">#FFFFFF</color>
     <color name="gris">#6B7280</color>
