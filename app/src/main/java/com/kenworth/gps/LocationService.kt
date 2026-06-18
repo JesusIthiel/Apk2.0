@@ -39,17 +39,16 @@ class LocationService : Service() {
             val loc = mejorLectura ?: cualquierLectura
             mejorLectura    = null
             cualquierLectura = null
-            if (loc != null) {
-                enviarUbicacion(loc)
-            } else {
-                // Sin GPS: ping al servidor para detectar eliminated/unlinked
-                enviarUbicacion(Location("heartbeat").apply {
-                    latitude  = 0.0
-                    longitude = 0.0
-                    accuracy  = 0f
-                })
-            }
+            if (loc != null) enviarUbicacion(loc)
             handler.postDelayed(this, Config.INTERVALO_MS)
+        }
+    }
+
+    // Runnable que cada 10s verifica si el dispositivo fue eliminado o desvinculado
+    private val pingRunnable = object : Runnable {
+        override fun run() {
+            verificarEstado()
+            handler.postDelayed(this, Config.PING_INTERVALO_MS)
         }
     }
 
@@ -62,8 +61,8 @@ class LocationService : Service() {
         crearCanalNotificacion()
         iniciarComoForeground()
         iniciarRastreo()
-        // Primer envío a los 60 segundos
         handler.postDelayed(enviarRunnable, Config.INTERVALO_MS)
+        handler.postDelayed(pingRunnable,   Config.PING_INTERVALO_MS)
         return START_STICKY
     }
 
@@ -182,16 +181,7 @@ class LocationService : Service() {
                     val obj    = JSONObject(texto)
                     val status = obj.optString("status", "")
                     when (status) {
-                        "eliminated", "unlinked" -> {
-                            getSharedPreferences(Config.PREFS_NAME, MODE_PRIVATE).edit().apply {
-                                clear(); apply()
-                            }
-                            val intent = Intent(this@LocationService, LoginActivity::class.java).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                            }
-                            startActivity(intent)
-                            stopSelf()
-                        }
+                        "eliminated", "unlinked" -> cerrarSesion()
                         "error" -> Log.e("KW_GPS", "Error servidor: ${obj.optString("message", "")}")
                         "success" -> Log.d("KW_GPS", "OK [${location.latitude}, ${location.longitude}] acc:${location.accuracy.toInt()}m")
                     }
@@ -202,9 +192,47 @@ class LocationService : Service() {
         })
     }
 
+    private fun cerrarSesion() {
+        getSharedPreferences(Config.PREFS_NAME, MODE_PRIVATE).edit().clear().apply()
+        startActivity(Intent(this, LoginActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        })
+        stopSelf()
+    }
+
+    private fun verificarEstado() {
+        val prefs  = getSharedPreferences(Config.PREFS_NAME, MODE_PRIVATE)
+        val idTel  = prefs.getString(Config.KEY_TELEFONO, "") ?: ""
+        if (idTel.isEmpty()) return
+
+        val json = JSONObject().apply {
+            put("android_id",  androidId)
+            put("id_telefono", idTel)
+        }
+        val body = json.toString().toRequestBody("application/json".toMediaType())
+        val req  = Request.Builder()
+            .url(Config.PING_URL)
+            .addHeader("X-API-Key", Config.API_KEY)
+            .post(body)
+            .build()
+
+        httpClient.newCall(req).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {}
+            override fun onResponse(call: Call, response: Response) {
+                val texto = response.body?.string() ?: ""
+                response.close()
+                try {
+                    val status = JSONObject(texto).optString("status", "")
+                    if (status == "eliminated" || status == "unlinked") cerrarSesion()
+                } catch (_: Exception) {}
+            }
+        })
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacks(enviarRunnable)
+        handler.removeCallbacks(pingRunnable)
         if (::locationCallback.isInitialized)
             fusedLocationClient.removeLocationUpdates(locationCallback)
         httpClient.dispatcher.executorService.shutdown()
