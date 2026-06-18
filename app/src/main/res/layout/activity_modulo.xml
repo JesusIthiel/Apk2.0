@@ -20,7 +20,7 @@
             android:layout_height="40dp"
             android:src="@android:drawable/ic_media_previous"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:colorFilter="@color/blanco"
+            android:tint="@color/blanco"
             android:contentDescription="Regresar" />
 
         <TextView
