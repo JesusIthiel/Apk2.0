@@ -11,13 +11,23 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import okhttp3.*
+import org.json.JSONObject
+import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var etTelefono: EditText
-    private lateinit var btnIniciar: Button
-    private lateinit var cardNumero: View
-    private lateinit var prefs:      SharedPreferences
+    private lateinit var etTelefono:      EditText
+    private lateinit var btnIniciar:      Button
+    private lateinit var cardNumero:      View
+    private lateinit var tvModulosTitulo: TextView
+    private lateinit var rvModulos:       RecyclerView
+    private lateinit var progressModulos: ProgressBar
+    private lateinit var prefs:           SharedPreferences
+
+    private val httpClient = OkHttpClient()
 
     private val launUbicacion = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -50,21 +60,81 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        etTelefono = findViewById(R.id.etTelefono)
-        btnIniciar = findViewById(R.id.btnIniciar)
-        cardNumero = findViewById(R.id.cardNumero)
+        etTelefono      = findViewById(R.id.etTelefono)
+        btnIniciar      = findViewById(R.id.btnIniciar)
+        cardNumero      = findViewById(R.id.cardNumero)
+        tvModulosTitulo = findViewById(R.id.tvModulosTitulo)
+        rvModulos       = findViewById(R.id.rvModulos)
+        progressModulos = findViewById(R.id.progressModulos)
+
+        rvModulos.layoutManager = LinearLayoutManager(this)
 
         btnIniciar.setOnClickListener { verificarYArrancar() }
 
         val numero = prefs.getString(Config.KEY_TELEFONO, "") ?: ""
         if (numero.isNotEmpty()) {
-            cardNumero.visibility = View.GONE
-            // Siempre arrancar el servicio al abrir la app — Android puede haberlo matado
+            mostrarModulos()
             prefs.edit { putBoolean(Config.KEY_ACTIVO, true) }
             arrancarServicio()
         } else {
             cardNumero.visibility = View.VISIBLE
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val numero = prefs.getString(Config.KEY_TELEFONO, "") ?: ""
+        if (numero.isNotEmpty()) cargarModulos()
+    }
+
+    private fun mostrarModulos() {
+        cardNumero.visibility      = View.GONE
+        tvModulosTitulo.visibility = View.VISIBLE
+        rvModulos.visibility       = View.VISIBLE
+        cargarModulos()
+    }
+
+    private fun cargarModulos() {
+        progressModulos.visibility = View.VISIBLE
+
+        val req = Request.Builder()
+            .url("${Config.CONTENIDO_API}?accion=modulos")
+            .addHeader("X-API-Key", Config.API_KEY)
+            .build()
+
+        httpClient.newCall(req).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread { progressModulos.visibility = View.GONE }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val body = response.body?.string() ?: ""
+                response.close()
+                runOnUiThread {
+                    progressModulos.visibility = View.GONE
+                    try {
+                        val json  = JSONObject(body)
+                        val array = json.getJSONArray("data")
+                        val lista = mutableListOf<Modulo>()
+                        for (i in 0 until array.length()) {
+                            val obj = array.getJSONObject(i)
+                            lista.add(Modulo(
+                                id        = obj.getInt("id"),
+                                nombre    = obj.getString("nombre"),
+                                totalPdfs = obj.optInt("total_pdfs", 0)
+                            ))
+                        }
+                        rvModulos.adapter = ModulosAdapter(lista) { modulo ->
+                            val intent = Intent(this@MainActivity, ModuloActivity::class.java).apply {
+                                putExtra("modulo_id",     modulo.id)
+                                putExtra("modulo_nombre", modulo.nombre)
+                            }
+                            startActivity(intent)
+                        }
+                    } catch (_: Exception) {}
+                }
+            }
+        })
     }
 
     private fun verificarYArrancar() {
@@ -100,7 +170,7 @@ class MainActivity : AppCompatActivity() {
     private fun iniciarServicio() {
         prefs.edit { putBoolean(Config.KEY_ACTIVO, true) }
         arrancarServicio()
-        cardNumero.visibility = View.GONE
+        mostrarModulos()
     }
 
     private fun arrancarServicio() {
@@ -114,4 +184,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun toast(msg: String) =
         Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+
+    override fun onDestroy() {
+        super.onDestroy()
+        httpClient.dispatcher.executorService.shutdown()
+    }
 }
