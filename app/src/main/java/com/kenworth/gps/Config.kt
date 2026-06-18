@@ -1,8 +1,8 @@
 package com.kenworth.gps
 
 object Config {
-    const val API_URL   = "https://kweste.com.mx/Movil/php/ubicaciones_api.php?accion=registrar"
-    const val LOGIN_URL = "https://kweste.com.mx/Movil/php/ubicaciones_api.php?accion=login_conductor"
+    const val API_URL   = "https://kweste.com.mx/Telefonia/php/ubicaciones_api.php?accion=registrar"
+    const val LOGIN_URL = "https://kweste.com.mx/Telefonia/php/ubicaciones_api.php?accion=login_conductor"
     const val API_KEY   = "kw-gps-5e47b359a5d8d39e7df630b0"
 
     const val INTERVALO_MS  = 1 * 60 * 1000L

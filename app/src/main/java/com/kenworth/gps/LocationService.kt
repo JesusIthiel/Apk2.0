@@ -14,22 +14,37 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.*
 
 class LocationService : Service() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
     private val httpClient = OkHttpClient()
+    private val handler = Handler(Looper.getMainLooper())
 
-    // Info del dispositivo (se lee una vez al iniciar)
+    // Mejor lectura acumulada en la ventana de 1 minuto
+    @Volatile private var mejorLectura: Location? = null
+
     private val androidId by lazy {
         Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: ""
     }
-    private val modeloDispositivo  = Build.MODEL          ?: ""
-    private val marcaDispositivo   = Build.MANUFACTURER   ?: ""
-    private val versionOS          = Build.VERSION.RELEASE ?: ""
+    private val modeloDispositivo = Build.MODEL          ?: ""
+    private val marcaDispositivo  = Build.MANUFACTURER   ?: ""
+    private val versionOS         = Build.VERSION.RELEASE ?: ""
+
+    // Runnable que cada 60s toma la mejor lectura acumulada y la envía
+    private val enviarRunnable = object : Runnable {
+        override fun run() {
+            val loc = mejorLectura
+            mejorLectura = null
+            if (loc != null) {
+                enviarUbicacion(loc)
+            } else {
+                Log.w("KW_GPS", "Sin lectura precisa en el último minuto")
+            }
+            handler.postDelayed(this, Config.INTERVALO_MS)
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -40,6 +55,8 @@ class LocationService : Service() {
         crearCanalNotificacion()
         iniciarComoForeground()
         iniciarRastreo()
+        // Primer envío a los 60 segundos
+        handler.postDelayed(enviarRunnable, Config.INTERVALO_MS)
         return START_STICKY
     }
 
@@ -47,10 +64,9 @@ class LocationService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val canal = NotificationChannel(
                 Config.CHANNEL_ID,
-                "Rastreo GPS Kenworth",
+                "Kenworth del Este",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Servicio de ubicación activo"
                 setShowBadge(false)
             }
             getSystemService(NotificationManager::class.java).createNotificationChannel(canal)
@@ -58,7 +74,7 @@ class LocationService : Service() {
     }
 
     private fun buildNotif(texto: String): Notification {
-        val pendingIntent = PendingIntent.getActivity(
+        val pi = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -66,7 +82,7 @@ class LocationService : Service() {
             .setContentTitle("Kenworth del Este")
             .setContentText(texto)
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
-            .setContentIntent(pendingIntent)
+            .setContentIntent(pi)
             .setOngoing(true)
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_MIN)
@@ -82,33 +98,25 @@ class LocationService : Service() {
         }
     }
 
-    private fun actualizarNotif(texto: String) {
-        getSystemService(NotificationManager::class.java)
-            .notify(Config.NOTIF_ID, buildNotif(texto))
-    }
-
     private fun iniciarRastreo() {
+        // Pedir fix cada 15 segundos para acumular buenas lecturas
         val request = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
-            Config.INTERVALO_MS
+            15_000L
         )
-            .setMinUpdateIntervalMillis(Config.INTERVALO_MS / 2)
-            .setMaxUpdateDelayMillis(Config.INTERVALO_MS + 30_000L)
+            .setMinUpdateIntervalMillis(10_000L)
+            .setMaxUpdateDelayMillis(20_000L)
             .build()
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
-                // Elegir la lectura más precisa del lote
-                val mejor = result.locations
-                    .filter { it.accuracy <= 150f }
-                    .minByOrNull { it.accuracy }
-                if (mejor != null) {
-                    enviarUbicacion(mejor)
-                } else {
-                    // Todas son imprecisas — registrar pero no enviar
-                    val peor = result.lastLocation
-                    Log.w("KW_GPS", "Precisión baja (${peor?.accuracy?.toInt()}m) — omitida")
-                    actualizarNotif("⚠ Señal GPS débil — esperando fix")
+                for (loc in result.locations) {
+                    if (loc.accuracy > 50f) continue   // ignorar lecturas peores a 50 m
+                    val actual = mejorLectura
+                    if (actual == null || loc.accuracy < actual.accuracy) {
+                        mejorLectura = loc              // guardar solo si es más precisa
+                        Log.d("KW_GPS", "Nuevo mejor fix: ${loc.accuracy.toInt()}m")
+                    }
                 }
             }
         }
@@ -156,16 +164,13 @@ class LocationService : Service() {
             override fun onResponse(call: Call, response: Response) {
                 val texto = response.body?.string() ?: ""
                 response.close()
-
                 try {
                     val obj    = JSONObject(texto)
                     val status = obj.optString("status", "")
-
                     when (status) {
                         "eliminated", "unlinked" -> {
                             getSharedPreferences(Config.PREFS_NAME, MODE_PRIVATE).edit().apply {
-                                clear()
-                                apply()
+                                clear(); apply()
                             }
                             val intent = Intent(this@LocationService, LoginActivity::class.java).apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -173,12 +178,8 @@ class LocationService : Service() {
                             startActivity(intent)
                             stopSelf()
                         }
-                        "error" -> {
-                            Log.e("KW_GPS", "Error servidor: ${obj.optString("message", "")}")
-                        }
-                        "success" -> {
-                            Log.d("KW_GPS", "OK [${location.latitude}, ${location.longitude}]")
-                        }
+                        "error" -> Log.e("KW_GPS", "Error servidor: ${obj.optString("message", "")}")
+                        "success" -> Log.d("KW_GPS", "OK [${location.latitude}, ${location.longitude}] acc:${location.accuracy.toInt()}m")
                     }
                 } catch (e: Exception) {
                     Log.e("KW_GPS", "Parse error: ${e.message}")
@@ -189,6 +190,7 @@ class LocationService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        handler.removeCallbacks(enviarRunnable)
         if (::locationCallback.isInitialized)
             fusedLocationClient.removeLocationUpdates(locationCallback)
         httpClient.dispatcher.executorService.shutdown()
