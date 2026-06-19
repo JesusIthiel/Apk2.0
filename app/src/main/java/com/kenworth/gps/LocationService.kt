@@ -61,7 +61,9 @@ class LocationService : Service() {
         crearCanalNotificacion()
         iniciarComoForeground()
         iniciarRastreo()
-        // Enviar última ubicación conocida al instante para registrar el dispositivo de inmediato
+        // Heartbeat inmediato: registra/reactiva el dispositivo antes del primer ping
+        enviarHeartbeat()
+        // Enviar última ubicación conocida al instante si hay fix reciente
         try {
             fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
                 if (loc != null) enviarUbicacion(loc)
@@ -150,6 +152,35 @@ class LocationService : Service() {
             Log.e("KW_GPS", "Sin permiso: ${e.message}")
             stopSelf()
         }
+    }
+
+    private fun enviarHeartbeat() {
+        val prefs  = getSharedPreferences(Config.PREFS_NAME, MODE_PRIVATE)
+        val idTel  = prefs.getString(Config.KEY_TELEFONO, "") ?: ""
+        if (idTel.isEmpty()) return
+
+        val json = JSONObject().apply {
+            put("id_telefono",     idTel)
+            put("android_id",      androidId)
+            put("lat",             0)
+            put("lng",             0)
+            put("modelo",          modeloDispositivo)
+            put("marca",           marcaDispositivo)
+            put("version_android", versionOS)
+        }
+        val body = json.toString().toRequestBody("application/json".toMediaType())
+        val req  = Request.Builder()
+            .url(Config.API_URL)
+            .addHeader("X-API-Key", Config.API_KEY)
+            .post(body)
+            .build()
+        httpClient.newCall(req).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {}
+            override fun onResponse(call: Call, response: Response) {
+                response.body?.string()
+                response.close()
+            }
+        })
     }
 
     private fun enviarUbicacion(location: Location) {
